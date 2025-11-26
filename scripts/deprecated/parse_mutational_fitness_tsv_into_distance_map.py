@@ -1,5 +1,5 @@
 """
-Supplementary data S2 from Obermeyer et al (https://www.medrxiv.org/content/10.1101/2021.09.07.21263228v1)
+Supplementary data S2 from Obermeyer et al (https://www.science.org/doi/10.1126/science.abm1208)
 is a TSV table that maps mutations such as "S:D614G" to an estimate of "Δ log R" and is available via GitHub.
 Here, we convert this TSV table into a JSON compatable with the augur distance command.
 To update model run:
@@ -7,7 +7,50 @@ To update model run:
 python scripts/developer_scripts/parse_mutational_fitness_tsv_into_distance_map.py
 
 and the version the resulting changes to defaults/mutational_fitness_distance_map.json
+
+Updated model outputs are available at https://github.com/bkotzen/sars-cov2-modeling following:
+
+https://raw.githubusercontent.com/bkotzen/sars-cov2-modeling/main/2024-07-22/PyR0/mutations.tsv
+
+--------------------------------------------------------------
+
+This analysis was removed from the workflow on 2025-01-23
+This was drawn from results at https://github.com/bkotzen/sars-cov2-modeling
+But this repo hasn't been updated since 2024-07-22
+If these results become updated more frequently, we should restore this analysis
+
+This was used in the workflow following:
+
+rule mutational_fitness:
+    input:
+        tree = "results/{build_name}/tree.nwk",
+        alignments = lambda w: rules.translate.output.translations,
+        distance_map = config["files"]["mutational_fitness_distance_map"]
+    output:
+        node_data = "results/{build_name}/mutational_fitness.json"
+    benchmark:
+        "benchmarks/mutational_fitness_{build_name}.txt"
+    log:
+        "logs/mutational_fitness_{build_name}.txt"
+    params:
+        genes = ' '.join(config.get('genes', ['S'])),
+        compare_to = "root",
+        attribute_name = "mutational_fitness"
+    conda:
+        config["conda_environment"],
+    resources:
+        mem_mb=2000
+    shell:
+        augur distance \
+            --tree {input.tree} \
+            --alignment {input.alignments} \
+            --gene-names {params.genes} \
+            --compare-to {params.compare_to} \
+            --attribute-name {params.attribute_name} \
+            --map {input.distance_map} \
+            --output {output} 2>&1 | tee {log}
 """
+
 import argparse
 import pandas as pd
 import json
@@ -17,11 +60,10 @@ if __name__ == '__main__':
         description="Convert mutational fitness values to an Augur distance map",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument("--input", default="https://raw.githubusercontent.com/broadinstitute/pyro-cov/master/paper/mutations.tsv", help="TSV file of mutational effects")
+    parser.add_argument("--input", default="https://raw.githubusercontent.com/bkotzen/sars-cov2-modeling/main/2024-07-22/PyR0/mutations.tsv", help="TSV file of mutational effects")
     parser.add_argument("--output", default="defaults/mutational_fitness_distance_map.json", help="JSON file for augur distance")
     args = parser.parse_args()
 
-    print("fetching pyro-cov mutations.tsv from GitHub")
     # collect simple string mapping from TSV, ie
     # 'S:A522V': -0.00661378
     # 'ORF1a:T4304I': 0.00353199
