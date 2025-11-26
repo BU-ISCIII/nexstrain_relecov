@@ -11,6 +11,16 @@
       "type": "categorical"
     },
     {
+        "key": "immune_escape",
+        "title": "Immune Escape vs BA.2",
+        "type": "continuous"
+    },
+    {
+        "key": "ace2_binding",
+        "title": "ACE2 binding vs BA.2",
+        "type": "continuous"
+    },
+    {
       "key": "pango_lineage",
       "title": "PANGO Lineage",
       "type": "categorical"
@@ -26,18 +36,8 @@
       "type": "continuous"
     },
     {
-      "key": "logistic_growth",
-      "title": "Logistic growth",
-      "type": "continuous"
-    },
-    {
-      "key": "current_frequency",
-      "title": "Current frequency",
-      "type": "continuous"
-    },
-    {
-      "key": "mutational_fitness",
-      "title": "Mutational fitness",
+      "key": "mlr_lineage_fitness",
+      "title": "MLR lineage fitness",
       "type": "continuous"
     },
     {
