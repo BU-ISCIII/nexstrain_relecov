@@ -2,11 +2,11 @@
 #
 
 # You can set these variables from the command line, and also
-# from the environment for the first two.
+# from the environment for the first three.
 SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
+BUILDDIR      ?= build
 SOURCEDIR     = src
-BUILDDIR      = build
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -18,6 +18,9 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+livehtml:
+	sphinx-autobuild -b html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 .ONESHELL:
 docker-html:

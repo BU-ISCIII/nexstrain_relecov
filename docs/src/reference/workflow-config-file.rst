@@ -15,6 +15,8 @@ Primary configuration
 Parameters in this section define the main inputs and outputs of the workflow, as well as the commonly used ``subsampling`` rule.
 Often these will be the only parameters you need to modify.
 
+.. _inputs:
+
 inputs
 ------
 
@@ -65,7 +67,7 @@ metadata
    -  ``data/example_metadata.tsv``
    -  ``data/example_metadata.tsv.xz``
    -  ``s3://your-bucket/metadata.tsv.gz``
-   -  ``https://data.nextstrain.org/files/ncov/open/metadata.tsv.gz``
+   -  ``https://data.nextstrain.org/files/ncov/open/metadata.tsv.zst``
 
 sequences
 ~~~~~~~~~
@@ -77,7 +79,7 @@ sequences
    -  ``data/example_sequences.fasta``
    -  ``data/example_sequences.fasta.xz``
    -  ``s3://your-bucket/sequences.fasta.gz``
-   -  ``https://data.nextstrain.org/files/ncov/open/sequences.fasta.xz``
+   -  ``https://data.nextstrain.org/files/ncov/open/sequences.fasta.zst``
 
 aligned
 ~~~~~~~
@@ -89,7 +91,7 @@ aligned
    -  ``data/aligned.fasta``
    -  ``data/aligned.fasta.xz``
    -  ``s3://your-bucket/aligned.fasta.gz``
-   -  ``https://data.nextstrain.org/files/ncov/open/aligned.fasta.xz``
+   -  ``https://data.nextstrain.org/files/ncov/open/aligned.fasta.zst``
 
 
 builds
@@ -150,7 +152,7 @@ colors
 ~~~~~~
 
 -  type: string
--  description: Path to a build-specific color map to use in Auspice.
+-  description: Path to a build-specific color map file. Format: tab-delimited, no header. Each row should contain a metadata field as the first column, metadata value in the second column, and hex color code in the third column.
 
 .. _configuration-builds-description:
 
@@ -191,6 +193,11 @@ title
 -  type: string
 -  description: Build-specific title to provide to ``augur export`` and display as the title of the analysis in Auspice.
 
+warning
+~~~~~~~
+
+- type: string
+- description: Build-specific warning to provide to ``augur export`` and display in a warning banner in Auspice.
 
 .. _configuration-subsampling:
 
@@ -198,7 +205,7 @@ subsampling
 -----------
 
 -  type: object
--  description: Schemes for subsampling data prior to phylogenetic inference to avoid sampling bias or focus an analysis on specific spatial and/or temporal scales. `See the SARS-CoV-2 tutorial for more details on defining subsampling schemes <../reference/customizing-analysis.html#subsampling>`__.
+-  description: Schemes for subsampling data prior to phylogenetic inference to avoid sampling bias or focus an analysis on specific spatial and/or temporal scales. See the :doc:`genomic surveillance tutorial <../tutorial/genomic-surveillance>` for an example.
 
 Predefined subsampling schemes are:
 
@@ -374,6 +381,17 @@ Secondary configuration
 
 These parameters are other high-level parameters which may affect multiple Snakemake rules, or modify which rules are run.
 
+nextclade_dataset
+-----------------
+
+- type: string
+- description: Name of a Nextclade dataset that appears in the output of ``nextclade dataset list``. The workflow will download the corresponding dataset by running ``nextclade dataset get --name {nextclade_dataset}`` where the value in the curly brackets is the value defined in the configuration file. The final alignment for each build will use the reference sequence and gene map from this dataset.
+- default: ``sars-cov-2``
+- examples:
+
+  - ``sars-cov-2-21L``
+  - ``sars-cov-2-no-recomb``
+
 default_build_name
 ------------------
 
@@ -389,6 +407,7 @@ strip_strain_prefixes
 -  description: A list of prefixes to strip from strain names in metadata and sequence records to maintain consistent strain names when analyzing data from multiple sources.
 -  default: ``["hCoV-19/", "SARS-CoV-2/"]``
 
+.. _auspice_json_prefix:
 
 auspice_json_prefix
 -------------------
@@ -413,13 +432,20 @@ title
 -  description: Title to provide to ``augur export`` and display as the title of the analysis in Auspice. Note that this is only used if a title is not defined for the individual build in the ``builds`` object.
 
 
+warning
+-------
+
+-  type: string
+-  description: Warning to provide to ``augur export`` and display in a warning banner in Auspice. Note that this is only used if a warning is not defined for the individual build in the ``builds`` object.
+
+
 genes
 -----
 
 -  type: array
--  description: A list of genes for which ``nextalign`` should generate amino acid sequences during the alignment process. Gene names must match the names provided in the gene map from the ``annotation`` parameter.
+-  description: A list of genes for which ``nextclade`` should generate amino acid sequences during the alignment process. Gene names must match the names provided in the gene map from the ``annotation`` parameter.
 -  default: ``["ORF1a", "ORF1b", "S", "ORF3a", "M", "N"]``
--  used in rules: ``align``, ``build_align``, ``translate``, ``mutational_fitness``
+-  used in rules: ``align``, ``build_align``, ``translate``
 
 
 active_builds
@@ -499,17 +525,17 @@ alignment_reference
 ~~~~~~~~~~~~~~~~~~~
 
 -  type: string
--  description: Path to a FASTA-formatted sequence to use for alignment with ``nextalign``
+-  description: Path to a FASTA-formatted sequence to use for alignment with ``nextclade``
 -  default: ``defaults/reference_seq.fasta``
--  used in rules: ``align``, ``proximity_score`` (subsampling), ``build_align``, ``build_mutation_summary``
+-  used in rules: ``align``, ``proximity_score`` (subsampling)
 
 annotation
 ~~~~~~~~~~
 
 -  type: string
--  description: Path to a GFF-formatted annotation of gene coordinates (e.g., a “gene map”) for use by ``nextalign`` and mutation summaries.
+-  description: Path to a GFF-formatted annotation of gene coordinates (e.g., a “gene map”) for use by ``nextclade`` for codon-aware alignment.
 -  default: ``defaults/annotation.gff``
--  used in rules: ``align``, ``build_align``, ``build_mutation_summary``
+-  used in rules: ``align``
 
 outgroup
 ~~~~~~~~
@@ -532,6 +558,14 @@ color_schemes
 -  description: Path to a list of tab-delimited and manually curated categorical color schemes for N total categories where row one defines one color, row two define two colors, and so on. Along with the ``ordering`` file, this file is used to generate a build-specific color map for use by Auspice.
 -  default: ``defaults/color_schemes.tsv``
 -  used in rules: ``colors``
+
+colors
+~~~~~~
+
+-  type: string
+-  description: Path to a color map file. Format: tab-delimited, no header. Each row should contain a metadata field as the first column, metadata value in the second column, and hex color code in the third column.
+-  default: colors generated from the ``colors`` rule
+-  used in rules: ``export``
 
 .. _auspice_config-1:
 
@@ -583,6 +617,8 @@ Per-Rule configuration
 
 Each top-level parameter here corresponds to a single Snakemake rule.
 Note that ``subsampling`` is a commonly used rule configuration which is described separately in the Primary configuration section.
+
+.. _sanitize_metadata:
 
 sanitize_metadata
 -----------------
@@ -711,13 +747,6 @@ crowding_penalty
      # You may wish to set `crowding_penalty = 0.0` (default value = `0.1`) if you are interested in seeing as many samples as possible that are closely related to your `focal` set.
 
 .. _title-1:
-
-run_pangolin
-------------
-
--  type: boolean
--  description: Enable annotation of Pangolin lineages for a given build's subsampled sequences.
--  default: ``false``
 
 .. _workflow-config-mask:
 
@@ -925,6 +954,34 @@ no_timetree
 -  description: Do not produce a time tree.
 -  default: ``false``
 
+colors
+------
+
+-  type: object
+-  description: Parameters for assigning colors in ``scripts/assign-colors.py``
+-  examples:
+
+.. code:: yaml
+
+   colors:
+     default:
+       clade_recency: "all"
+     global-6m:
+       # Override clade recency colors for "global-6m" build
+       clade_recency: "6M"
+
+Each named traits configuration (``default`` or build-named) supports the following attributes:
+
+.. contents::
+   :local:
+
+clade_recency
+~~~~~~~~~~~~~
+
+-  type: string
+-  format: `ISO 8601 <https://en.wikipedia.org/wiki/ISO_8601#Durations>`__ duration with optional ``P`` prefix (e.g. ``2M``, ``18M``, ``1Y6M``)
+-  description: restrict to clades found in tree within this duration from present
+-  default: ``all`` (no restriction)
 
 traits
 ------
@@ -967,12 +1024,29 @@ columns
 
 frequencies
 -----------
-- Valid attributes:
+-  type: object
+-  description: Parameters for specifying tip frequency calculations via ``augur frequencies``
+-  examples:
+
+.. code:: yaml
+
+   frequencies:
+     pivot_interval_units: "weeks"
+     default:
+       min_date: "6M"
+       narrow_bandwidth: 0.038
+     global_1m:
+       min_date: "1M"
+       narrow_bandwidth: 0.019
+     global_2020_to_2022:
+       min_date: "2020-01-01"
+       max_date: "2022-01-01"
+       narrow_bandwidth: 0.076
+
+Each named traits configuration (``default`` or build-named) supports specification of ``min_date``, ``max_date`` and ``narrow_bandwidth``. Other parameters can only be specified across all builds.
 
 .. contents::
    :local:
-
-.. _min_date-1:
 
 min_date
 ~~~~~~~~
@@ -1043,46 +1117,6 @@ inertia
 -  Unused
 
 
-logistic_growth
----------------
-
--  type: object
--  description: Parameters for estimation of logistic clade growth based on logit-transformed clade frequencies.
--  Valid attributes:
-
-.. contents::
-   :local:
-
-delta_pivots
-~~~~~~~~~~~~
-
--  type: integer
--  description: Calculate logistic growth over the last N pivots which corresponds to N times the amount of time represented by the ``pivot_interval_units`` in the frequencies configuration.
--  default: ``6``
-
-min_tips
-~~~~~~~~
-
--  type: integer
--  description: The minimum number of tips a clade must have before its logistic growth is calculated.
--  default: ``50``
-
-min_frequency
-~~~~~~~~~~~~~
-
--  type: float
--  description: The minimum current frequency for a clade to have its logistic growth calculated.
--  default: ``0.000001``
-
-max_frequency
-~~~~~~~~~~~~~
-
--  type: float
--  description: The maximum current frequency for a clade to have its logistic growth calculated.
--  default: ``0.95``
-
-
-
 ancestral
 ---------
 
@@ -1136,6 +1170,13 @@ Internal, Nextstrain-only configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You shouldn't need to use parameters in this section unless you are running the core-Nextstrain builds. In addition to these parameters you will need AWS credentials set, e.g. in environment variables.
+
+upload
+------
+
+- type: object
+- description: Mapping of remote → local filenames to be uploaded under ``S3_DST_BUCKET``. Only valid for core Nextstrain builds.
+- default: dynamically generated by the ``_get_upload_inputs`` input function
 
 S3_DST_BUCKET
 -------------

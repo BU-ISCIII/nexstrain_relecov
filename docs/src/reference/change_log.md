@@ -5,7 +5,56 @@ We also use this change log to document new features that maintain backward comp
 
 ## New features since last version update
 
-- 30 January 2022: Include new clade 23A correspoding to Pango lineage XBB.1.5. See [PR 1043](https://github.com/nextstrain/ncov/pull/1043) for the rationale behind this clade update.
+- 10 October 2025: Add parameter `warning` to display provided string in warning banner in Auspice. This can be defined per build or at the top level config. [PR 1186](https://github.com/nextstrain/ncov/pull/1186)
+- 29 July 2025: Improved performance of calls to `augur filter`. This requires a minimum Augur version of 31.3.0. [PR 1178](https://github.com/nextstrain/ncov/pull/1178)
+
+## v17 (17 July 2025)
+
+- 17 July 2025: Snakemake version 8 (or above) is now required. Various aspects of the workflow were incompatible with v8 including our support for remote files and have now been updated. The nextstrain runtimes have been correspondingly updated; see [the nextstrain-cli docs for how to upgrade these](https://docs.nextstrain.org/projects/cli/en/stable/commands/update/). [PR 1180](https://github.com/nextstrain/ncov/pull/1180)
+
+- 17 July 2025: Support for Google Cloud Storage via `path_or_url` has been removed. Please get in touch if this is needed as it should be possible to restore it. Implemented in [PR 1180](https://github.com/nextstrain/ncov/pull/1180) and discussed [in this zika PR](https://github.com/nextstrain/zika/pull/89#discussion_r2190671313).
+
+- 17 July 2025: Cluster support (both rhino and scicore) has been removed. [PR 1180](https://github.com/nextstrain/ncov/pull/1180)
+
+- 10 February 2025: Improve documentation regarding custom color map files.
+
+## v16 (29 January 2025)
+
+- 23 January 2025: Include a new `mlr_lineage_fitness` coloring. This uses live estimates of lineage fitness from [nextstrain.org/sars-cov-2/forecasts](https://nextstrain.org/sars-cov-2/forecasts) to provide a strain-level coloring to the tree. The lineage fitness estimates are automatically updated as new data comes in and so this coloring should stay current. [PR 1169](https://github.com/nextstrain/ncov/pull/1169)
+
+- 23 January 2025: Deprecate previous fitness-related colorings of `mutational_fitness`, `logistic_growth` and `current_frequency` (used by logistic growth). The new `mlr_lineage_fitess` should be more accurate / more current than these previous approaches. [PR 1169](https://github.com/nextstrain/ncov/pull/1169)
+
+## v15 (5 December 2024)
+
+- 5 December 2024: Remove `run_pangolin` configuration option from the workflow, since the pangoLEARN tool that this enabled has been deprecated. [PR 1164](https://github.com/nextstrain/ncov/pull/1164)
+
+## v14 (23 October 2024)
+
+- 23 October 2024: Update workflow to use Nextclade v3. This includes the removal of unused mutation summary script and rules that expected Nextclade v2 outputs. Dropping the mutation summary rules removed the need for the full alignment rule `align` to produce the insertions and translations outputs, so they have been removed. The `build_align` rule no longer produces a separate `insertions.tsv` since insertions are now included in the `nextclade_qc.tsv`. [PR 1160](https://github.com/nextstrain/ncov/pull/1160)
+
+- 2 October 2024: Include a new parameter for `clade_recency` under `colors`. This parameter is used to define which clades should receive a color from the standard rainbow palette. A value of `6M` will cause clades with strains in the tree sampled within the last 6 months to be colored and earlier strains to not receive a color (and be colored in a palette of grays by Auspice). This `clade_recency` parameter is used in `builds.yaml` in `nextstrain_profiles` to color clades according for the `1m`, `2m`, `6m` and `all-time` timepoints. If `clade_recency` is not supplied then all clades will be colored. [PR 1132](https://github.com/nextstrain/ncov/pull/1132)
+
+- 30 September 2024: Use population-based weighted sampling for `nextstrain_profiles`. This requires a minimum Augur version of 25.3.0. PRs [1106](https://github.com/nextstrain/ncov/pull/1106), [1150](https://github.com/nextstrain/ncov/pull/1150), [1151](https://github.com/nextstrain/ncov/pull/1151)
+
+- 31 January 2024: Remove RBD-level related rules and files since this feature has been broken since May 2023 and is no longer relevant. [PR 1097](https://github.com/nextstrain/ncov/pull/1097)
+
+- 30 January 2024: Fix RBD-level coloring by updating clade label and clade parsing. [PR 1094](https://github.com/nextstrain/ncov/pull/1094)
+
+- 14 Dec 2023: Use `nextclade2` binary that makes the version explicit [PR 1089](https://github.com/nextstrain/ncov/pull/1089)
+
+- 17 June 2023: Update subsampling strategy for `nextstrain_profiles` to better equilibrate per-capita sampling rates across geographic regions. Primarily this update breaks out China and India as separate subsampling targets because of their large population sizes. It also fine tunes the per-region sampling targets. After this update, URL structure (ie https://nextstrain.org/ncov/gisaid/global/6m) is unchanged. [PR 1074](https://github.com/nextstrain/ncov/pull/1074)
+
+## v13 (16 May 2023)
+
+- 16 May 2023: Update workflow to support [Augur v22](https://github.com/nextstrain/augur/releases/tag/22.0.0) which updates the `augur clades` interface and structure of the output files to allow specifying the clade label & coloring keys. Because we use custom scripts to parse these files this worflow also needed updating. This change results in a simplifying of the nCoV pipeline (PR [1000](https://github.com/nextstrain/ncov/pull/1000)).
+
+- 11 April 2023: Elevate XBB.1.16 as new clade 23B. See [PR 1059](https://github.com/nextstrain/ncov/pull/1059) for the rationale behind this clade update.
+
+- 6 April 2023: Update conda environment dependencies: augur 19.2.0 -> 21.1.0, nextalign/nextclade 2.9.1 -> 2.13.1, iqtree 2.2.0_beta -> 2.2.0.3. [PR 1056](https://github.com/nextstrain/ncov/pull/1056)
+
+- 16 March 2023: Add a build configuration option, `nextclade_dataset`, to allow users to change the Nextclade dataset used for alignment and quality control. For example, setting `nextclade_dataset: sars-cov-2-21L` will use the BA.2 (Nextstrain 21L) dataset that provides immune escape and ACE2 binding scores. [See the workflow configuration guide for more details](https://docs.nextstrain.org/projects/ncov/en/latest/reference/workflow-config-file.html#nextclade-dataset). [PR 1046](https://github.com/nextstrain/ncov/pull/1046)
+
+- 30 January 2023: Include new clade 23A correspoding to Pango lineage XBB.1.5. See [PR 1043](https://github.com/nextstrain/ncov/pull/1043) for the rationale behind this clade update.
 
 - 9 December 2022: Add `immune escape` and `ace2_binding` from metadata  as colorings for `nextstrain-open` and `nextstrain-gisaid` builds. [PR 1036](https://github.com/nextstrain/ncov/pull/1036)
 
@@ -89,7 +138,7 @@ We also use this change log to document new features that maintain backward comp
 
 ## New features since last version update
 
- - 11 August 2021: Add support for "Sequences" and "Patient status metadata" downloads from GISAID's search interface including [documentation in the tutorial of how to use these data](../guides/data-prep.html#curate-data-from-gisaid-search-and-downloads). ([#701](https://github.com/nextstrain/ncov/pull/701))
+ - 11 August 2021: Add support for "Sequences" and "Patient status metadata" downloads from GISAID's search interface including [documentation in the tutorial of how to use these data](https://docs.nextstrain.org/projects/ncov/en/latest/guides/data-prep/gisaid-search.html). ([#701](https://github.com/nextstrain/ncov/pull/701))
  - 6 August 2021: We've replaced the mechanisms that support remote file inputs (e.g. `s3://` URLs) to improve internal workflow structure, extend support to `gs://`, `http://`, and `https://` URLs, and expand support for compressed inputs.
    Our [remote file inputs documentation](remote_inputs) is updated to reflect the changes.
 
@@ -110,7 +159,7 @@ We also use this change log to document new features that maintain backward comp
 
 ## v7 (27 May 2021)
 
-For more details about this release, see [the configuration reference for the new "sanitize metadata" parameters](configuration.html#sanitize_metadata) and [the corresponding pull request](https://github.com/nextstrain/ncov/pull/640).
+For more details about this release, see [the configuration reference for the new "sanitize metadata" parameters](https://docs.nextstrain.org/projects/ncov/en/latest/reference/workflow-config-file.html#sanitize-metadata) and [the corresponding pull request](https://github.com/nextstrain/ncov/pull/640).
 
 ### Major changes
 
@@ -123,7 +172,7 @@ For more details about this release, see [the configuration reference for the ne
 
 ## New features since last version update
 
- - 25 May 2021: Support custom Auspice JSON prefixes with a new configuration parameter, `auspice_json_prefix`. [See the configuration reference for more details](configuration.html#auspice_json_prefix). ([#643](https://github.com/nextstrain/ncov/pull/643))
+ - 25 May 2021: Support custom Auspice JSON prefixes with a new configuration parameter, `auspice_json_prefix`. [See the configuration reference for more details](https://docs.nextstrain.org/projects/ncov/en/latest/reference/workflow-config-file.html#auspice-json-prefix). ([#643](https://github.com/nextstrain/ncov/pull/643))
 
 ## v6 (20 May 2021)
 
@@ -143,7 +192,7 @@ For more details about this release, see [the configuration reference for the ne
 
 ### Major changes
 
-- Drop support for old sequence/metadata inputs. This change removes support for the `config["sequences"]` and `config["metadata"]` starting points for the workflow in favor of the more flexible [`config["inputs"]` format](configuration.html#inputs).
+- Drop support for old sequence/metadata inputs. This change removes support for the `config["sequences"]` and `config["metadata"]` starting points for the workflow in favor of the more flexible [`config["inputs"]` format](https://docs.nextstrain.org/projects/ncov/en/latest/reference/workflow-config-file.html#inputs).
 - Use `nextalign` for alignment instead of `mafft`. This change completely removes support for `mafft` in favor of `nextalign`. Future versions may reinstate `mafft` support as part of `augur align` updates.
 
 ### Minor changes
@@ -170,7 +219,7 @@ For more details about this release, see [the configuration reference for the ne
 
 ## New features since last version update
 
-- 20 April 2021: Surface emerging lineage as a colorby. This replaces the rather stale color by "Emerging Clade" with a new color by "Emerging Lineage". This focuses on PANGO lineages that are of interest triangulated by [CoVariants](https://covariants.org/), [PANGO](https://cov-lineages.org/) international lineage reports, [CDC](https://www.cdc.gov/coronavirus/2019-ncov/cases-updates/variant-surveillance/variant-info.html) VUIs and VOCs and [PHE](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/975742/Variants_of_Concern_VOC_Technical_Briefing_8_England.pdf) VUIs and VOCs. The intention is for the listing at `emerging_lineages.tsv` to be updated frequently with new lineages added and no longer interesting lineages dropped. [#609](https://github.com/nextstrain/ncov/pull/609)
+- 20 April 2021: Surface emerging lineage as a colorby. This replaces the rather stale color by "Emerging Clade" with a new color by "Emerging Lineage". This focuses on PANGO lineages that are of interest triangulated by [CoVariants](https://covariants.org/), [PANGO](https://cov-lineages.org/) international lineage reports, [CDC](https://www.cdc.gov/covid/php/variants/index.html) VUIs and VOCs and [PHE](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/975742/Variants_of_Concern_VOC_Technical_Briefing_8_England.pdf) VUIs and VOCs. The intention is for the listing at `emerging_lineages.tsv` to be updated frequently with new lineages added and no longer interesting lineages dropped. [#609](https://github.com/nextstrain/ncov/pull/609)
 
 - 12 April 2021: Calculate current clade frequency and logistic growth rate across nodes in the phylogeny. This produces a new `logistic_growth.json` file and uses this file to add a coloring the final Auspice JSON. Implementation choices are discussed in PR [#595](https://github.com/nextstrain/ncov/pull/595).
 
