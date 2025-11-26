@@ -15,7 +15,7 @@ Prerequisites
 -------------
 
 1. :doc:`custom-data`. This tutorial introduces concepts expanded by the following tutorial.
-2. `Register for a GISAID account <https://www.gisaid.org/registration/register/>`_, if you do not have one yet. However, registration may take a few days. Follow :doc:`alternative data preparation methods <../guides/data-prep/index>` in place of :ref:`genomic-surveillance-curate-data-from-gisaid`, if you wish to continue the following tutorial in the meantime.
+2. `Register for a GISAID account <https://gisaid.org/registration/>`_, if you do not have one yet. However, registration may take a few days. Follow :doc:`alternative data preparation methods <../guides/data-prep/index>` in place of :ref:`genomic-surveillance-curate-data-from-gisaid`, if you wish to continue the following tutorial in the meantime.
 
 Setup
 -----
@@ -33,21 +33,16 @@ Curate data from GISAID
 
 We will download a focal set of Idaho sequences from GISAID's EpiCoV database.
 
-1. Navigate to `GISAID <https://www.gisaid.org/>`__, **Login**, and go to **EpiCoV** > **Search**.
+1. Navigate to `GISAID <https://gisaid.org/>`__, **Login**, and go to **EpiCoV** > **Search**.
 
    .. image:: ../images/gisaid-epicov-search.png
       :width: 400
       :alt: GISAID EpiCoV Search
 
-.. |last-month| timedelta::
-   :weeks: -4
-
-.. |today| date::
-
 2. Filter to sequences that pass the following criteria:
 
-   1. From Idaho, USA
-   2. Collected within the last month (e.g. |last-month| to |today|)
+   1. From North America / USA / Idaho
+   2. Collected between 2022-03-01 and 2022-04-01
    3. Has a complete genome
    4. Has an exact collection date
 
@@ -55,11 +50,9 @@ We will download a focal set of Idaho sequences from GISAID's EpiCoV database.
       :width: 700
       :alt: GISAID EpiCoV filter and select sequences
 
-      Example of GISAID filters using collection date between 2022-03-01 and 2022-04-01
-
    .. note::
 
-      If your selection has more than 200 sequences, adjust the minimum date until it has 200 sequences or less. This ensures the tutorial does not take too long to run.
+      If your selection has more than 250 sequences, adjust the minimum date until it has 250 sequences or less. This ensures the tutorial does not take too long to run.
 
 3. Select the topmost checkbox in the first column to select all sequences that match the filters.
 4. Select **Download** > **Input for the Augur pipeline** > **Download**.
@@ -72,7 +65,7 @@ We will download a focal set of Idaho sequences from GISAID's EpiCoV database.
 Run the workflow
 ----------------
 
-From within the ``ncov/`` directory, run the ``ncov`` workflow using a pre-written ``--configfile``:
+From within the ``ncov/`` directory, run the ``ncov`` workflow using a pre-written :term:`config file`:
 
 .. code:: text
 
@@ -168,7 +161,7 @@ Run this command to start the :term:`docs.nextstrain.org:Auspice` server, provid
 
    nextstrain view auspice/
 
-Navigate to http://127.0.0.1:4000/ncov/idaho. The resulting :term:`docs.nextstrain.org:dataset` should show the recent Idaho sequences against a backdrop of historical sequences:
+Navigate to http://127.0.0.1:4000/ncov/idaho. The resulting :term:`docs.nextstrain.org:dataset` should show the Idaho sequences against a backdrop of historical sequences:
 
 .. figure:: ../images/dataset-genomic-surveillance.png
    :alt: Phylogenetic tree from the "genomic surveillance" tutorial as visualized in Auspice

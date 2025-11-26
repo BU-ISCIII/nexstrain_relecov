@@ -16,10 +16,8 @@ sys.path.insert(0, os.path.abspath('..'))
 
 
 # -- Project information -----------------------------------------------------
-from datetime import date, timedelta
-from docutils import nodes
-from docutils.parsers import rst
-from docutils.parsers.rst import directives
+
+from datetime import date
 import subprocess
 
 def git_authors():
@@ -116,39 +114,35 @@ intersphinx_mapping = {
     'snakemake': ('https://snakemake.readthedocs.io/en/stable', None),
 }
 
-# Custom directives.
-class TimeDeltaDirective(rst.Directive):
-    """Minimal directive to call datetime.timedelta with the given optional
-    arguments and return today's date plus the calculated delta. If no arguments
-    are provided, returns today's date. All dates are formatted in ISO-8601
-    standard of %Y-%m-%d.
+# -- Linkchecking ------------------------------------------------------------
 
-    """
-    required_arguments = 0
-    optional_arguments = 7
-
-    option_spec = {
-        "days": directives.unchanged,
-        "seconds": directives.unchanged,
-        "microseconds": directives.unchanged,
-        "milliseconds": directives.unchanged,
-        "minutes": directives.unchanged,
-        "hours": directives.unchanged,
-        "weeks": directives.unchanged,
-    }
-
-    def run(self):
-        kwargs = {}
-        for option in self.option_spec.keys():
-            if option in self.options:
-                kwargs[option] = int(self.options[option])
-
-        date_object = date.today()
-        if kwargs:
-            date_object = date_object + timedelta(**kwargs)
-
-        date_text = date_object.strftime("%Y-%m-%d")
-
-        return [nodes.Text(date_text)]
-
-directives.register_directive("timedelta", TimeDeltaDirective)
+linkcheck_ignore = [
+    # we have links to localhost for explanatory purposes; obviously
+    # they will never work in the linkchecker
+    r'^http://127\.0\.0\.1:\d+',
+    r'^http://localhost:\d+',
+    # the top level bucket link 404s
+    r'^https://data\.nextstrain\.org$',
+    # they block the client, probably anti-scraping measure
+    r'^https://czgenepi\.org/resources',
+    r'^https://science\.sciencemag\.org/content/early/2020/06/05/science\.abb9263',
+    r'^https://www\.medrxiv\.org',
+    # this link is correct but the lack of a top-level dataset means
+    # it 404s initially — because the point of this link is showing
+    # the community page, allow it to fail here:
+    r'^https://nextstrain\.org/community/ESR-NZ/GenomicsNarrativeSARSCoV2$'
+]
+linkcheck_anchors_ignore_for_url = [
+    # Github uses anchor-looking links for highlighting lines but
+    # handles the actual resolution with Javascript, so skip anchor
+    # checks for Github URLs:
+    r'^https://github\.com',
+    # you need to be logged in to see the anchor (and it looks like
+    # Terra is using it for redirecting more than anchoring too…)
+    r'^https://app\.terra\.bio/',
+    # client is blocked but links work
+    r'^https://www\.science\.org/doi/10\.1126/science\.abb9263',
+    # linkchecker doesn't support text fragments, and we link to one
+    # anchored to this page
+    r'^https://en\.wikipedia\.org/wiki/Consensus_sequence',
+]
