@@ -4,11 +4,8 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - augur=19.2.0
+  - augur=22.4.0
   - epiweeks=2.1.2
-  - iqtree=2.2.0_beta
-  - nextalign=2.9.1
-  - nextclade=2.9.1
-  - pangolin=3.1.20
-  - pangolearn=2022.01.20
-  - python>=3.7*
+  - iqtree=2.2.0.3
+  - nextclade=3.9.0
+  - python>=3.8*
