@@ -7,15 +7,14 @@ from os import environ
 from socket import getfqdn
 from getpass import getuser
 from snakemake.logging import logger
-from snakemake.utils import validate
+from snakemake.utils import min_version, validate
 from collections import OrderedDict
 import textwrap
 import time
 
-# Set the maximum recursion limit globally for all shell commands, to avoid
-# issues with large trees crashing the workflow.  Preserve Snakemake's default
-# use of Bash's "strict mode", as we rely on that behaviour.
-shell.prefix("set -euo pipefail; export AUGUR_RECURSION_LIMIT=10000; ")
+
+# Minimum Snakemake version needed for the storage plugins used in remote_files.smk
+min_version("8.0.0")
 
 # Store the user's configuration prior to loading defaults, so we can check for
 # reused subsampling scheme names in the user's config. We need to make a deep
@@ -38,6 +37,10 @@ shell.prefix("set -euo pipefail; export AUGUR_RECURSION_LIMIT=10000; ")
 # [4] https://github.com/snakemake/snakemake/blob/a7ac40c96d6e2af47102563d0478a2220e2a2ab7/snakemake/workflow.py#L1088-L1094
 # [5] https://github.com/snakemake/snakemake/blob/a7ac40c96d6e2af47102563d0478a2220e2a2ab7/snakemake/utils.py#L455-L476
 user_subsampling = copy.deepcopy(config.get("subsampling", {}))
+if user_subsampling is None:
+    logger.error("ERROR: The configuration file you have provided defines a `subsampling` section that appears to be empty.")
+    logger.error("Check that section of your configuration file to confirm that it isn't empty and that its contents are properly indented below the `subsampling` key.")
+    sys.exit(1)
 
 configfile: "defaults/parameters.yaml"
 
