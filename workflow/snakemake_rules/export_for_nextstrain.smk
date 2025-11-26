@@ -22,6 +22,8 @@
 import re
 import requests
 import json
+import sys
+import traceback
 from workflow.lib.persistent_dict import PersistentDict, NoSuchEntryError
 
 ruleorder: dated_json > finalize
@@ -82,48 +84,16 @@ rule export_all_regions:
         # Memory use scales primarily with the size of the metadata file.
         # Compared to other rules, this rule loads metadata as a pandas
         # DataFrame instead of a dictionary, so it uses much less memory.
-        mem_mb=lambda wildcards, input: 5 * int(input.metadata.size / 1024 / 1024)
+        mem_mb=lambda wildcards, input: 5 * int(input.metadata.size_mb)
     conda: config["conda_environment"]
     shell:
-        """
+        r"""
         python3 ./scripts/check_missing_locations.py \
             --metadata {input.metadata} \
             --colors {input.colors} \
             --latlong {input.lat_longs}
         """
 
-
-rule mutation_summary:
-    message: "Summarizing {input.alignment}"
-    input:
-        alignment = rules.align.output.alignment,
-        insertions = rules.align.output.insertions,
-        translations = rules.align.output.translations,
-        reference = config["files"]["alignment_reference"],
-        genemap = config["files"]["annotation"]
-    output:
-        mutation_summary = "results/mutation_summary_{origin}.tsv.xz"
-    log:
-        "logs/mutation_summary_{origin}.txt"
-    benchmark:
-        "benchmarks/mutation_summary_{origin}.txt"
-    params:
-        outdir = "results/translations",
-        basename = "seqs_{origin}",
-        genes=config["genes"],
-    conda: config["conda_environment"]
-    shell:
-        """
-        python3 scripts/mutation_summary.py \
-            --alignment {input.alignment} \
-            --insertions {input.insertions} \
-            --directory {params.outdir} \
-            --basename {params.basename} \
-            --reference {input.reference} \
-            --genes {params.genes:q} \
-            --genemap {input.genemap} \
-            --output {output.mutation_summary} 2>&1 | tee {log}
-        """
 
 #
 # Rule for generating a per-build auspice config
@@ -139,7 +109,7 @@ rule auspice_config:
     benchmark:
         "benchmarks/make_auspice_config_{build_name}.txt"
     run:
-        input_set = set(config['inputs'])
+        input_set = set(config['inputs']) - {"references"}
         build_name = wildcards.build_name
 
         if "_" in build_name:
@@ -154,7 +124,6 @@ rule auspice_config:
         default_map_triplicate = True if build_region in ["reference", "global"] else False
         if input_set == {"gisaid"}:
             data_provenance = [{"name": "GISAID"}]
-            gisaid_clade_coloring = {"key": "GISAID_clade", "title": "GISAID Clade", "type": "categorical"}
             gisaid_epi_isl_coloring = {"key": "gisaid_epi_isl", "type": "categorical"}
             location_coloring = {"key": "location", "title": "Location", "type": "categorical"}
             location_filter = "location"
@@ -162,7 +131,6 @@ rule auspice_config:
             submitting_lab_filter  = "submitting_lab"
         elif input_set == {"open"}:
             data_provenance = [{"name": "GenBank", "url": "https://www.ncbi.nlm.nih.gov/genbank/"}]
-            gisaid_clade_coloring = None
             gisaid_epi_isl_coloring = None
             location_coloring = None
             location_filter = None
@@ -196,16 +164,10 @@ rule auspice_config:
                     "title": "Nextclade Pango Lineage",
                     "type": "categorical"
                 },
-                gisaid_clade_coloring,
                 {
                     "key": "S1_mutations",
                     "title": "S1 Mutations",
                     "type": "continuous"
-                },
-                {
-                    "key": "rbd_level",
-                    "title": "RBD Level",
-                    "type": "ordinal"
                 },
                 {
                     "key": "immune_escape",
@@ -218,18 +180,8 @@ rule auspice_config:
                     "type": "continuous"
                 },
                 {
-                    "key": "logistic_growth",
-                    "title": "Logistic Growth",
-                    "type": "continuous"
-                },
-                {
-                    "key": "current_frequency",
-                    "title": "Current Frequency",
-                    "type": "continuous"
-                },
-                {
-                    "key": "mutational_fitness",
-                    "title": "Mutational Fitness",
+                    "key": "mlr_lineage_fitness",
+                    "title": "MLR lineage fitness",
                     "type": "continuous"
                 },
                 {
@@ -303,7 +255,6 @@ rule auspice_config:
                 "pango_lineage",
                 "Nextclade_pango",
                 "region",
-                "level",
                 "country",
                 "division",
                 location_filter,
@@ -312,7 +263,6 @@ rule auspice_config:
                 originating_lab_filter,
                 submitting_lab_filter,
                 "recency",
-                "rbd_level",
             ],
             "panels": [
                 "tree",
@@ -355,7 +305,7 @@ rule dated_json:
         date = r"\d{4}-\d{2}-\d{2}"
     conda: config["conda_environment"]
     shell:
-        """
+        r"""
         cp {input.auspice_json} {output.dated_auspice_json}
         cp {input.tip_frequencies_json} {output.dated_tip_frequencies_json}
         cp {input.root_sequence_json} {output.dated_root_sequence_json}
@@ -458,7 +408,7 @@ rule upload:
             message += f"\n\ts3://{params.s3_bucket}/{remote}"
         send_slack_message(message)
 
-storage = PersistentDict("slack")
+persistent_storage = PersistentDict("slack")
 
 def send_slack_message(message, broadcast=False):
     """
@@ -485,15 +435,20 @@ def send_slack_message(message, broadcast=False):
 
     # if slack_thread_ts has been stored, then there is a parent message, so we thread this messaege
     try:
-        data["thread_ts"]=str(storage.fetch("slack_thread_ts"))
+        data["thread_ts"]=str(persistent_storage.fetch("slack_thread_ts"))
         if broadcast:
             data["reply_broadcast"]=True
     except NoSuchEntryError:
         pass
 
-    response = requests.post("https://slack.com/api/chat.postMessage", headers=headers, data=json.dumps(data))
-    response.raise_for_status()
-    storage.store_if_not_present("slack_thread_ts", response.json()["ts"])
+    try:
+        response = requests.post("https://slack.com/api/chat.postMessage", headers=headers, data=json.dumps(data))
+        response.raise_for_status()
+        persistent_storage.store_if_not_present("slack_thread_ts", response.json()["ts"])
+    except Exception as error:
+        print("An error occurred when sending Slack message:", file=sys.stderr)
+        traceback.print_exc()
+        print("Oh well. Ignoring and moving on…", file=sys.stderr)
 
 # onstart handler will be executed before the workflow starts.
 onstart:
@@ -510,10 +465,11 @@ onstart:
 onsuccess:
     message = "✅ This pipeline has successfully finished 🎉"
     send_slack_message(message)
-    storage.clear() # clear any persistent storage
+    persistent_storage.clear() # clear any persistent storage
 
 # onerror handler is executed if the workflow finished with an error.
 onerror:
     message = "❌ This pipeline has FAILED 😞. Please see linked thread for more information."
     send_slack_message(message, broadcast=True)
-    storage.clear() # clear any persistent storage
+    persistent_storage.clear() # clear any persistent storage
+
