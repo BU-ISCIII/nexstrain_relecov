@@ -1356,7 +1356,6 @@ rule finalize:
             --output {output.auspice_json} 2>&1 | tee {log} &&
         cp {input.frequencies} {output.tip_frequency_json} &&
         cp {input.root_sequence_json} {output.root_sequence_json} &&
-        # Crear copias dated con fecha actual usando Python
         DATE=$(python3 -c "from datetime import datetime; print(datetime.today().strftime('%Y-%m-%d'))") &&
         cp {output.auspice_json} auspice/SARS-CoV-2_${{DATE}}.json &&
         cp {output.tip_frequency_json} auspice/SARS-CoV-2_${{DATE}}_tip-frequencies.json &&
